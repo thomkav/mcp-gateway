@@ -1,0 +1,25 @@
+{
+  "name": "@mcp-gateway/example-minimal",
+  "version": "1.0.0",
+  "description": "Minimal example of MCP Gateway integration",
+  "type": "module",
+  "private": true,
+  "main": "dist/index.js",
+  "bin": {
+    "mcp-minimal": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@mcp-gateway/core": "workspace:*",
+    "@mcp-gateway/server": "workspace:*",
+    "@modelcontextprotocol/sdk": "^0.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "typescript": "^5.7.2"
+  }
+}

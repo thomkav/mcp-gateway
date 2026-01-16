@@ -36,6 +36,7 @@ Third-Party APIs (Vikunja, Asana, etc.)
 | `@mcp-gateway/core` | Core security components (auth, sessions, verification) |
 | `@mcp-gateway/server` | Secure MCP server wrapper |
 | `@mcp-gateway/storage` | Secure token storage (OS keyring integration) |
+| `@mcp-gateway/cli` | Command-line tool for gateway management |
 
 ## Quick Start
 
@@ -53,11 +54,38 @@ pnpm test
 pnpm test:coverage
 ```
 
+## CLI Usage
+
+The `@mcp-gateway/cli` package provides command-line tools for managing the MCP Gateway:
+
+```bash
+# Configure tokens (interactive)
+mcp-gateway configure
+
+# Check security status
+mcp-gateway status --user-id your-user-id
+
+# Rotate sessions
+mcp-gateway rotate --user-id your-user-id --destroy-all
+
+# See all available commands
+mcp-gateway --help
+```
+
+See [`packages/cli/README.md`](./packages/cli/README.md) for detailed CLI documentation.
+
 ## Examples
 
-See `examples/` directory for complete implementations:
-- **Vikunja** - Secure Vikunja MCP server
-- **Minimal** - Minimal example showing core concepts
+Complete working examples demonstrating MCP Gateway integration:
+
+- **[Minimal Example](./examples/minimal/)** - Bare-bones integration showing core concepts
+- **[Vikunja Example](./examples/vikunja/)** - Production-ready secure Vikunja MCP server
+
+Each example includes:
+- ✅ Full source code with TypeScript
+- ✅ Detailed README with setup instructions
+- ✅ Security best practices implementation
+- ✅ Ready to run and customize
 
 ## Security Compliance
 
@@ -75,9 +103,36 @@ This framework addresses all requirements from Anthropic's MCP Security Best Pra
 
 ## Documentation
 
-- [Security Architecture](./docs/SECURITY.md)
-- [API Reference](./docs/API.md)
-- [Migration Guide](./docs/MIGRATION.md)
+### Core Documentation
+
+- **[Security Architecture](./docs/SECURITY.md)** - Comprehensive security guide including:
+  - Architecture diagrams
+  - Threat model and attack scenarios
+  - Security components deep-dive
+  - Compliance checklist (Anthropic MCP Security Best Practices, OWASP API Top 10)
+  - Production deployment best practices
+  - Audit logging and monitoring
+
+- **[API Reference](./docs/API.md)** - Complete API documentation for:
+  - `@mcp-gateway/core` - All security components with examples
+  - `@mcp-gateway/server` - SecureMCPServer class and tool registration
+  - `@mcp-gateway/cli` - Command-line interface reference
+  - Type definitions and interfaces
+
+- **[Migration Guide](./docs/MIGRATION.md)** - Step-by-step guide for:
+  - Migrating from insecure MCP servers
+  - Before/after code comparisons
+  - Common migration patterns
+  - Troubleshooting and rollback strategies
+
+- **[Integration Patterns & Best Practices](./docs/EXAMPLES.md)** - Comprehensive guide to:
+  - Quick start patterns
+  - Authentication and authorization patterns
+  - Token management strategies
+  - Error handling best practices
+  - Middleware patterns
+  - Testing strategies
+  - Production deployment patterns
 
 ## License
 
