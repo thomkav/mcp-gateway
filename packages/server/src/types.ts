@@ -57,12 +57,26 @@ export interface SecureToolDefinition {
 }
 
 /**
+ * Audit log entry structure
+ */
+export interface AuditLogEntry {
+  timestamp: Date;
+  userId?: string;
+  sessionId?: string;
+  action: string;
+  resource?: string;
+  result: 'success' | 'failure' | 'error';
+  metadata?: Record<string, unknown>;
+}
+
+/**
  * Server configuration
  */
 export interface SecureMCPServerConfig {
   name: string;
   version: string;
   jwtSecret: string;
+  transport?: 'stdio' | 'http'; // Transport type (default: 'stdio')
   sessionExpiryMs?: number;
   tokenExpirySeconds?: number;
   rateLimitConfig?: {
@@ -73,4 +87,11 @@ export interface SecureMCPServerConfig {
     serviceName?: string;
     fallbackToMemory?: boolean;
   };
+  auditLoggerConfig?: {
+    maxEntries?: number;
+    onLog?: (entry: AuditLogEntry) => void | Promise<void>;
+  };
+  // Optional overrides for stdio auto-auth (defaults: process.env.USER, all scopes)
+  stdioUserId?: string;
+  stdioScopes?: string[];
 }

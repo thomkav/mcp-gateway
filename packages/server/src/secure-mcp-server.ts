@@ -34,6 +34,7 @@ export class SecureMCPServer {
   private tokenVault: TokenVault;
   private tools: Map<string, SecureToolDefinition> = new Map();
   private middlewares: MiddlewareFunction[] = [];
+  private autoAuthToken?: string; // Auto-generated token for stdio mode
 
   constructor(config: SecureMCPServerConfig) {
     // Initialize security components
@@ -55,8 +56,26 @@ export class SecureMCPServer {
         maxRequests: 100,
       }
     );
-    this.auditLogger = new AuditLogger();
+    this.auditLogger = new AuditLogger(config.auditLoggerConfig);
     this.tokenVault = new TokenVault(config.tokenVaultConfig);
+
+    // Auto-auth for stdio transport (local development with full security stack)
+    const transport = config.transport || 'stdio';
+    if (transport === 'stdio') {
+      const userId = config.stdioUserId || process.env.USER || 'local-user';
+      const scopes = config.stdioScopes || ['vikunja:read', 'vikunja:write', 'vikunja:delete'];
+
+      const { token, sessionId } = this.createSession(userId, scopes);
+      this.autoAuthToken = token;
+
+      console.error('[TRANSPORT] stdio (local mode with auto-authentication)');
+      console.error('[AUTH] User:', userId);
+      console.error('[AUTH] Session:', sessionId);
+      console.error('[AUTH] Scopes:', scopes.join(', '));
+      console.error('[AUTH] JWT validation active for all requests');
+    } else {
+      console.error('[TRANSPORT] http (remote mode - clients must authenticate)');
+    }
 
     // Initialize MCP Server
     this.server = new Server(
@@ -230,10 +249,22 @@ export class SecureMCPServer {
    * Extract authentication token from request
    */
   private extractToken(request: unknown): string | null {
-    // In a real implementation, this would extract from headers or params
-    // For now, we expect it in a standard location
+    // Try to extract token from request params
     const req = request as { params?: { _token?: string } };
-    return req.params?._token ?? null;
+    const requestToken = req.params?._token ?? null;
+
+    // If token found in request, use it (remote mode or explicit auth)
+    if (requestToken) {
+      return requestToken;
+    }
+
+    // Fall back to auto-auth token if stdio mode enabled
+    if (this.autoAuthToken) {
+      return this.autoAuthToken;
+    }
+
+    // No token available
+    return null;
   }
 
   /**

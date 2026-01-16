@@ -133,4 +133,22 @@ export class TokenVault {
   isUsingKeyring(): boolean {
     return this.useKeyring;
   }
+
+  /**
+   * Get token for a user and service (convenience method)
+   * Key format: {userId}:{service}
+   */
+  async getToken(userId: string, service: string): Promise<string | null> {
+    const key = `${userId}:${service}`;
+    return this.retrieve(key);
+  }
+
+  /**
+   * Store token for a user and service (convenience method)
+   * Key format: {userId}:{service}
+   */
+  async setToken(userId: string, service: string, token: string): Promise<boolean> {
+    const key = `${userId}:${service}`;
+    return this.store(key, token);
+  }
 }

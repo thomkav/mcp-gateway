@@ -1,0 +1,20 @@
+
+> @mcp-gateway/example-vikunja@1.0.0 test
+> vitest --run
+
+
+ RUN  v2.1.9 /Users/thomasmacbookair/dev/mcp-gateway/examples/vikunja
+
+ ✓ tests/response-utils.test.ts (31 tests) 3ms
+ ✓ tests/vikunja-client.test.ts (36 tests) 10ms
+ ✓ tests/comment-tools.test.ts (11 tests) 5ms
+ ✓ tests/bucket-tools.test.ts (20 tests) 8ms
+ ✓ tests/workflow-tools.test.ts (30 tests) 9ms
+ ✓ tests/task-tools.test.ts (26 tests) 11ms
+ ✓ tests/project-tools.test.ts (20 tests) 13ms
+
+ Test Files  7 passed (7)
+      Tests  174 passed (174)
+   Start at  12:40:57
+   Duration  312ms (transform 228ms, setup 0ms, collect 434ms, tests 61ms, environment 1ms, prepare 408ms)
+

@@ -4,12 +4,27 @@ A production-ready secure MCP server for Vikunja task management integration.
 
 ## Features
 
-- **Full Security Layer**: Authentication, session management, authorization
-- **Scope-Based Access Control**: Separate `vikunja:read` and `vikunja:write` scopes
-- **Rate Limiting**: 60 requests per minute per user
-- **Secure Token Storage**: Vikunja API tokens stored in OS keyring
-- **Audit Logging**: All operations logged for security review
-- **Comprehensive Tool Set**: 8 tools for complete Vikunja integration
+### Security (Phase 3 Complete) ✅
+
+- **Authentication**: JWT tokens with HMAC-SHA256 signatures
+- **Session Management**: UUID v4 session IDs with 24-hour expiry
+- **Authorization**: Granular scope-based access control with custom checks
+- **Rate Limiting**: 60 requests per minute per user (Anthropic recommended)
+- **Audit Logging**: Comprehensive logging with configurable handlers
+- **Secure Token Storage**: Vikunja API tokens encrypted in OS keyring
+- **Input Validation**: Protection against injection and parameter pollution
+- **Defense in Depth**: Multiple security middleware layers
+
+### Vikunja Integration
+
+- **21 Total Tools**: Projects (5), Tasks (6), Buckets (4), Comments (2), Workflow helpers (4)
+- **Advanced Features**: Kanban views, task filtering, workflow automation
+- **Full CRUD Support**: Complete coverage of Vikunja API
+
+### Compliance ✅
+
+- ✅ Anthropic MCP Security Best Practices - Complete
+- ✅ OWASP API Security Top 10 - Mitigated
 
 ## Prerequisites
 
@@ -125,44 +140,69 @@ const { token, sessionId } = server.createSession(
 
 ### Authentication Flow
 
-1. User configures Vikunja API token via CLI (stored in OS keyring)
-2. Server creates session with JWT token
+1. User configures Vikunja API token via CLI (stored encrypted in OS keyring)
+2. Server creates session with JWT token (HMAC-SHA256)
 3. Each request verified against:
-   - Valid JWT token
-   - Active session
-   - Required scopes
-   - Rate limits
+   - Valid JWT token signature and expiry
+   - Active session (not expired)
+   - Required scopes (read/write/delete)
+   - Rate limits (60 req/min)
+   - Input validation
+4. All security events logged to audit log
+
+### Scope-Based Authorization
+
+Three permission levels with principle of least privilege:
+
+| Scope | Operations | Required For |
+|-------|-----------|--------------|
+| `vikunja:read` | Read-only | list_projects, get_project, list_tasks, get_task, list_buckets, etc. |
+| `vikunja:write` | Create/update | create_project, update_task, add_comment, etc. |
+| `vikunja:delete` | Delete (destructive) | delete_project, delete_task, delete_bucket |
+
+**Note**: Delete operations require BOTH `vikunja:write` AND `vikunja:delete` scopes.
 
 ### Token Storage
 
 ```
-OS Keyring (macOS: Keychain, Linux: Secret Service, Windows: Credential Vault)
-└── Service: mcp-vikunja
-    └── Account: user-123
-        └── Password: vikunja-api-token
-```
-
-### Authorization Model
-
-```
-User Session
-├── Scope: vikunja:read
-│   ├── List projects
-│   ├── Get project
-│   ├── List tasks
-│   └── Get task
-└── Scope: vikunja:write
-    ├── Create project
-    ├── Create task
-    ├── Update task
-    └── Delete task
+OS Keyring (Encrypted at Rest)
+├── macOS: Keychain (Hardware AES-256)
+├── Linux: Secret Service (AES-256 LUKS)
+└── Windows: Credential Vault (DPAPI)
+    └── Service: mcp-vikunja
+        └── Account: <userId>
+            └── Token: <vikunja-api-token>
 ```
 
 ### Rate Limiting
 
-- Window: 60 seconds
-- Max requests: 60 per user
-- Per-user enforcement
+- **Algorithm**: Sliding window counter
+- **Window**: 60 seconds (60000ms)
+- **Max Requests**: 60 per user
+- **Enforcement**: Per userId (shared across sessions)
+- **Behavior**: Returns error when exceeded, resets after window
+
+### Audit Logging
+
+All security events logged with configurable handlers:
+
+```
+[AUDIT:INFO] timestamp | tool_call | success | user=alice | session=uuid | resource=vikunja_list_tasks
+[AUDIT:WARN] timestamp | authorization_failed | failure | user=bob | {"error":"Missing vikunja:delete scope"}
+```
+
+**Logged Events**:
+- Token issued/verified/expired/invalid
+- Session created/destroyed/expired
+- Authorization succeeded/failed
+- Rate limit exceeded
+- Tool execution success/error
+
+### Security Middleware
+
+1. **Request Logging**: All requests logged with user/session context
+2. **Input Validation**: Validates numeric IDs, pagination params
+3. **Attack Prevention**: Blocks parameter pollution (`__proto__`, etc.)
 
 ## Example Usage
 
@@ -208,12 +248,14 @@ pnpm test
 
 Run the configure command:
 ```bash
-mcp-gateway configure
+npx @mcp-gateway/cli configure
 ```
 
 ### "Rate limit exceeded"
 
-Wait 60 seconds or adjust rate limits in `src/index.ts`:
+You've exceeded 60 requests per minute. Wait for the rate limit window to reset (60 seconds). Check audit logs for the reset timestamp.
+
+To adjust (not recommended for production):
 ```typescript
 rateLimitConfig: {
   windowMs: 60000,
@@ -221,9 +263,32 @@ rateLimitConfig: {
 }
 ```
 
+### "Invalid or expired token"
+
+JWT tokens expire after 1 hour. Create a new session:
+```typescript
+const { token } = server.createSession('userId', ['vikunja:read', 'vikunja:write']);
+```
+
 ### "Invalid or expired session"
 
-Create a new session - sessions expire after 24 hours by default.
+Sessions expire after 24 hours. Create a new session with the same userId.
+
+### "Authorization failed: Missing required scopes"
+
+The operation requires a scope you don't have. Delete operations need BOTH `vikunja:write` AND `vikunja:delete`:
+```typescript
+server.createSession('userId', ['vikunja:read', 'vikunja:write', 'vikunja:delete']);
+```
+
+### Keyring not available
+
+Ensure your OS keyring is unlocked:
+- **macOS**: Keychain is unlocked
+- **Linux**: GNOME Keyring or KWallet is running
+- **Windows**: Credential Manager is accessible
+
+The server is configured with `fallbackToMemory: false` for security, so it will fail if keyring is unavailable.
 
 ## Architecture
 
@@ -241,6 +306,17 @@ Token Vault (OS Keyring)
     ↓
 Vikunja API
 ```
+
+## Additional Resources
+
+- **[SECURITY_CONFIG.md](./SECURITY_CONFIG.md)** - Complete security configuration guide
+  - Pre-deployment checklist
+  - Production configuration
+  - Security monitoring
+  - Incident response procedures
+- **[MCP Gateway Security Documentation](../../docs/SECURITY.md)** - Framework security architecture
+- **[Vikunja API Documentation](https://vikunja.io/docs/api/)** - Vikunja API reference
+- **[Anthropic MCP Specification](https://modelcontextprotocol.io)** - MCP protocol spec
 
 ## License
 

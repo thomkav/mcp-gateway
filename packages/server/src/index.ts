@@ -7,4 +7,5 @@ export type {
   MCPRequest,
   MCPResponse,
   ToolHandler,
+  AuditLogEntry,
 } from './types.js';
